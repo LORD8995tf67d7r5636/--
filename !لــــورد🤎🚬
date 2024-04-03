@@ -1,0 +1,48 @@
+const Discord = require('discord.js');
+const ytdl = require('ytdl-core');
+
+const client = new Discord.Client();
+
+client.on('ready', () => {
+  console.log(`Bot is ready as: ${client.user.tag}`);
+});
+
+client.on('message', async message => {
+  if (message.author.bot) return;
+
+  if (message.content.startsWith('!play')) {
+    const voiceChannel = message.member.voice.channel;
+    if (!voiceChannel) {
+      return message.reply('Please join a voice channel first!');
+    }
+
+    const args = message.content.split(' ');
+    const searchString = args.slice(1).join(' ');
+    const url = ytdl.validateURL(searchString);
+
+    const songInfo = url
+      ? await ytdl.getInfo(url)
+      : await ytdl.search(searchString);
+
+    if (songInfo.length === 0) {
+      return message.reply('No songs found!');
+    }
+
+    const song = {
+      title: songInfo.videoDetails.title,
+      url: songInfo.videoDetails.video_url,
+    };
+
+    const connection = await voiceChannel.join();
+    const dispatcher = connection.play(ytdl(song.url));
+
+    message.reply(`Playing \`${song.title}\``);
+
+    dispatcher.on('finish', () => {
+      voiceChannel.leave();
+      message.reply('Finished playing!');
+    });
+  }
+});
+
+client.login('919917512274112513');001739
