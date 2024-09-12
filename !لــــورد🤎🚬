@@ -1,48 +1,957 @@
-const Discord = require('discord.js');
-const ytdl = require('ytdl-core');
+ثابت { العميل، GatewayIntentBits، EmbedBuilder، ActivityType، PermissionsBitField، ActionRowBuilder، ButtonBuilder، ButtonStyle، Partials، ComponentType } = require('discord.js');
+ثابت fs = يتطلب('fs');
+ثابت adhkar = يتطلب('./adhkar');
 
-const client = new Discord.Client();
-
-client.on('ready', () => {
-  console.log(`Bot is ready as: ${client.user.tag}`);
+ثابت العميل = عميل جديد({
+    النوايا: [
+        GatewayIntentBits.النقابات،
+        أعضاء نقابة GatewayIntentBits،
+        GatewayIntentBits.رسائل النقابة،
+        GatewayIntentBits.محتوى الرسالة
+    ],
+    جزئيات: [Partials.Channel]
 });
 
-client.on('message', async message => {
-  if (message.author.bot) return;
+// ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ‹ط £ظˆط§ظ…ط± ظˆط§ظ‹ط¥ط¯ط§ط±ط©
+بادئة ثابتة = ''; //ط§ظ„ط¨ظٹط±ظپظƒط³ ظ‡ط§ط°ط§ ظ„ظƒظˆط¯ ط§ظ„ظ†ظ‚ط§ط· طظ‚ ط§ظ„ط§ظ„ط¹ط§ط¨ ظپظ ‚ط· ظ…ظˆ ط§ظ„ظƒظˆط¯ ظƒط§ظ…ظ„
+ثابت adminRoles = ['1279129767911620619', '1279129769484750940', '1279144334087684189', '1279129770243653665', '1279129771808133151', '1279247062986129439','', '1279247062986129439', '1279129775897837570']; // ظ‡ظ†ط§ ط§ظ„ظٹ ظٹظ‚ط¯ط± ظٹط³طھط®ط¯ظ…ظˆظ† ط§ظˆط§ظ…ط± ط§ظ„ط§ط¯ط§ط±ط© طظ‚ ط§ظ„ط§ظ†ط°ط§ط± ظˆط§ ط§ظˆطھ طط· ظٹط¯ظٹ ط§ظ„ط±طھط¨ظ‡
+ثابت muteRoleIds = adminRoles؛
+ملف النقاط الثابت = 'points.json';
+تحذيرات ثابتةFilePath = './warnings.json';
+const adhkarChannelId = '1279127358930161671'; // معرف ظ‚ظ†ط§ط© ط§ظ„ط £ط°ظƒط§ط±
+const WelcomeChannelId = '1279126883786821663';// معرف ظ‚ظ†ط§ط© ط§ظ„طھط±طظٹط¨
+const autoroleID = '1279129784458412136'; // ظ‡ظ†ط§ طھطط· ط§ظٹط¯ظٹ ط§ظ„ط±طھط¨ظ‡ ط§ظ„ظٹ ط§ظˆظ„ ظ…ط§ ظٹط®ط´ ط§ظ„ط³ظٹط±ظپط± طھط¬ظٹظ‡
+const roleIds = ['1279192340258361364']; //معرف ط§ظ„ظٹ ظٹظ‚ط¯ط± ظٹط¹ط·ظٹ ظ†ظ‚ط§ط· ظپظٹ ط§ظ„ط§ظ„ط¹ط§ط¨  
 
-  if (message.content.startsWith('!play')) {
-    const voiceChannel = message.member.voice.channel;
-    if (!voiceChannel) {
-      return message.reply('Please join a voice channel first!');
+دع pointsData = {};
+دع التحذيرات = {}؛
+const يدعو = خريطة جديدة();
+
+إذا (fs.existsSync(ملف النقاط)) {
+    نقاط البيانات = JSON.parse(fs.readFileSync(نقاط الملف));
+} آخر {
+    fs.writeFileSync(ملف النقاط، JSON.stringify(بيانات النقاط));
+}
+
+إذا (fs.existsSync(مسار ملف التحذيرات)) {
+    التحذيرات = JSON.parse(fs.readFileSync(warningsFilePath، 'utf8'));
+}
+
+دالة parseDuration(المدة) {
+    ثابت المطابقة = مدة المطابقة(/(\d+)([dhm])/);
+    إذا لم يكن هناك تطابق، ارجع قيمة فارغة؛
+
+    القيمة الثابتة = parseInt(match[1]);
+    وحدة ثابتة = match[2];
+
+    مفتاح (وحدة) {
+        الحالة 'd': قيمة الإرجاع * 24 * 60 * 60 * 1000؛
+        الحالة 'h': قيمة الإرجاع * 60 * 60 * 1000؛
+        الحالة 'm': قيمة الإرجاع * 60 * 1000؛
+        افتراضيًا: إرجاع null؛
     }
+}
+
+دالة removeOldWarnings() {
+    ثابت الوقت الحالي = التاريخ.الآن();
+    دع التحديث = خطأ؛
+
+    بالنسبة إلى (معرف المستخدم الثابت في التحذيرات) {
+        إذا (التحذيرات[معرف المستخدم].الطول > 0) {
+            تحذيرات[معرف المستخدم] = تحذيرات[معرف المستخدم].تصفية((تحذير) => {
+                العودة (الوقت الحالي - تاريخ جديد (تحذير. الطابع الزمني). الحصول على الوقت ()) < 7 * 24 * 60 * 60 * 1000؛ // 7 دقائق…
+            });
+
+            إذا (التحذيرات[معرف المستخدم].الطول === 0) {
+                حذف التحذيرات[معرف المستخدم]؛
+            } آخر {
+                تم التحديث = صحيح؛
+            }
+        }
+    }
+
+    إذا (تم التحديث) {
+        fs.writeFileSync(warningsFilePath، JSON.stringify(التحذيرات));
+    }
+}
+
+setInterval(إزالة التحذيرات القديمة، 7 * 24 * 60 * 60 * 1000)؛
+
+العميل. مرة واحدة ('جاهز'، غير متزامن () => {
+    console.log(`الروبوت متصل بالإنترنت! ${client.user.tag}`);
+    console.log(`الكود بواسطة Sanigo`);
+
+    // طھط¹ظٹظٹظ† ط§ظظ„ط© ط§ظ„ط³طھط±ظٹظ…ظ†ط;
+    client.user.setActivity('Sanigo', { النوع: ActivityType.Streaming، عنوان URL: 'https://twitch.tv/yourchannel' });
+
+العميل.النقابات.ذاكرة التخزين المؤقت.لكل (نقابة غير متزامنة => {
+    يحاول {
+        const firstInvites = await guild.invites.fetch();
+        يدعو.set(معرف النقابة، خريطة جديدة(خريطة الدعوة الأولى(دعوة => [رمز الدعوة، استخدامات الدعوة])));
+    } catch (خطأ) {
+        console.error(`خطأ في جلب الدعوات للنقابة ${guild.id}:`, error);
+    }
+});
+
+
+
+العميل.on('messageCreate', رسالة غير متزامنة => {
+    إذا لم يكن (message.member) ارجع؛
 
     const args = message.content.split(' ');
-    const searchString = args.slice(1).join(' ');
-    const url = ytdl.validateURL(searchString);
+    الأمر الثابت = args.shift().toLowerCase();
 
-    const songInfo = url
-      ? await ytdl.getInfo(url)
-      : await ytdl.search(searchString);
+    const hasAdminPermission = message.member.roles.cache.some(الدور => adminRoles.includes(معرف الدور));
 
-    if (songInfo.length === 0) {
-      return message.reply('No songs found!');
+    إذا (command === '-ظ…ظٹظˆطھ' && hasAdminPermission) {
+        عضو ثابت = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
+        مدة ثابتة = args[1]؛
+        إذا لم يكن (عضوًا || !مدة) {
+            رسالة العودة.رد('ظٹط±ط¬ظ‰ طھطط¯ظٹط¯ ط§ظ„ظ…ط³طھط®ط¯ظ… ظˆظ…ط¯ط© ط§ظ„ظ…ظٹظˆطھ (ظ…ط«ط§ظ„ : 1د 1س 1م).');
+        }
+
+        ثابت المدةMs = parseDuration(المدة)؛
+        إذا لم تكن المدة دقيقة
+            return message.reply('ظٹط±ط¬ظ‰ طھطط¯ظٹط¯ ظ…ط¯ط© طμط§ظ„طط© (ظ…ط«ط§ظ„: 1d 1h 1m).');
+        }
+
+        يحاول {
+            انتظار العضو.timeout(durationMs);
+            const embed = new EmbedBuilder()
+                .setTitle('ًں”‡ ظ…ظٹظˆطھ')
+                .setDescription(`${ member.user.tag} طھظ… ظˆط¶ط¹ظ‡ ظپظٹ ظ…ظٹظˆطھ ظظ…ط¯ط© ${duration}.`)
+                .setColor('#ff0000')
+                .setFooter({ النص: `ط¨ظˆط§ط³ط·ط© ${message.author.tag}`، عنوان URL للأيقونة: message.author.displayAvatarURL() })
+                .setTimestamp();
+            الرسالة.القناة.إرسال({ تضمينات: [تضمين] });
+        } catch (خطأ) {
+            message.reply('طط¯ط« ط®ط·ط £ ط £ ط«ظ†ط§ط، ظ…طط§ظˆظ„ط© ظˆط¶ط¹ ط§ظ„ظ…ط³طھط®ط¯ظ… ظپظٹ ظ …ظٹظˆطھ.');
+        }
     }
 
-    const song = {
-      title: songInfo.videoDetails.title,
-      url: songInfo.videoDetails.video_url,
-    };
+    إذا (command === '-ظپظƒ' && hasAdminPermission) {
+        عضو ثابت = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
+        إذا (!عضو) يعيد الرسالة. الرد('ظٹط±ط¬ظ‰ طھطط¯ظٹط¯ ط§ظ„ظ…ط³طھط®ط¯ظ… ظ„ظپظƒ ط§ظ„ظ…ظٹظˆطھ ط¹ظ†ظ‡.') ;
 
-    const connection = await voiceChannel.join();
-    const dispatcher = connection.play(ytdl(song.url));
+        يحاول {
+            انتظر العضو.timeout(null);
+            const embed = new EmbedBuilder()
+                .setTitle('ًں”ٹ ظپظƒ ط§ظ„ظ…ظٹظˆطھ')
+                .setDescription(`طھظ… ظپظƒ ط§ظ„ظ…ظٹظˆطھ ط¹ظ† ${ member.user.tag}.`)
+                .setColor('#A9DFBF')
+                .setFooter({ النص: `ط¨ظˆط§ط³ط·ط© ${message.author.tag}`، عنوان URL للأيقونة: message.author.displayAvatarURL() })
+                .setTimestamp();
+            الرسالة.القناة.إرسال({ تضمينات: [تضمين] });
+        } catch (خطأ) {
+            message.reply('طط¯ط« ط®ط·ط £ ط £ ط«ظ†ط§ط، ظ…طط§ظˆظ„ط© ظپظƒ ط§ظ„ظ…ظٹظˆطھ ط¹ظ† ط§ظ„ظ…ط³طھط ®ط¯ظ….');
+        }
+    }
 
-    message.reply(`Playing \`${song.title}\``);
+إذا (الأمر === '-ط¨ط§ظ†ط¯' && لديه إذن المسؤول) {
+    عضو ثابت = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
+    مدة ثابتة = args[1]؛
+    إذا لم يكن (عضوًا || !مدة) {
+        رسالة العودة.رد('ظٹط±ط¬ظ‰ طھطط¯ظٹط¯ ط§ظ„ظ…ط³طھط®ط¯ظ… ظˆظ…ط¯ط© ط§ظ„طط¸ط± (ظ…ط«ط§ظ „: 1د 1س 1م).');
+    }
 
-    dispatcher.on('finish', () => {
-      voiceChannel.leave();
-      message.reply('Finished playing!');
-    });
+    ثابت المدةMs = parseDuration(المدة)؛
+    إذا لم تكن المدة دقيقة
+        return message.reply('ظٹط±ط¬ظ‰ طھطط¯ظٹط¯ ظ…ط¯ط© طμط§ظ„طط© (ظ…ط«ط§ظ„: 1d 1h 1m).');
+    }
+
+    إذا (عضو.أدوار.أعلى.موضع>=عضو.أدوار.أعلى.موضع في الرسالة) {
+        return message.reply('ظ„ط§ ظٹظ…ظƒظ†ظƒ طط¸ط± ط´ط®طμ ط¨ظ†ظپط³ ط§ظ„ط±طھط¨ط© ط £ظˆ ط £ط¹ظ„ظ‰ ظ… ظ†ظ‡ط§.');
+    }
+
+    يحاول {
+        انتظر العضو.ban({ السبب: `طط¸ط± ظ„ظ…ط¯ط© ${duration}` });
+        تعيين مهلة(() => {
+            الرسالة.أعضاء النقابة.إلغاء الحظر(معرف العضو)؛
+        }, مدةMs);
+        const embed = new EmbedBuilder()
+            .setTitle('ط¨ط§ظ†ط¯')
+            .setDescription(`${member.user.tag} طھظ… ط¸ط±ظ‡ ط„ظ…ط¯ط© ${duration}.`)
+            .setColor('#ff0000')
+            .setFooter({ النص: `ط¨ظˆط§ط³ط·ط© ${message.author.tag}`، عنوان URL للأيقونة: message.author.displayAvatarURL() })
+            .setTimestamp();
+        الرسالة.القناة.إرسال({ تضمينات: [تضمين] });
+    } catch (خطأ) {
+        message.reply('طط¯ط« ط®ط·ط £ ط £ ط«ظ†ط§ط، ظ…ط§ظˆظ„ط© طط¸ط± ط§ظ„ظ…ط³طھط®ط¯ظ…. ');
+    }
+}
+
+إذا (الأمر === '-ط·ط±ط¯' && hasAdminPermission) {
+    عضو ثابت = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
+    إذا (!عضو) أرجع الرسالة. الرد('ظٹط±ط¬ظ‰ طھطط¯ظٹط¯ ط§ظ‹ظ…ط³طھط®ط¯ظ… ظ„ظ‹ط·ط±ط¯.');
+
+    إذا (عضو.أدوار.أعلى.موضع>=عضو.أدوار.أعلى.موضع في الرسالة) {
+        رسالة العودة.رد('ظط§ ظٹظ…ظƒظ†ظƒ ط·ط±ط¯ ط´ط®طμ ط¨ظ†ظپط³ ط§ظ„ط±طھط¨ط© ط £ظˆ ط £ط¹ظ„ظ‰ ظ…ظ†ظ‡ط§.');
+    }
+
+    يحاول {
+        انتظر العضو.kick();
+        const embed = new EmbedBuilder()
+            .setTitle('ًں'¢ ط·ط±ط¯')
+            .setDescription(`طھظ… ط·ط±ط¯ ${ member.user.tag}.`)
+            .setColor('#ff0000') // ظˆظ† ط§طظ…ط±
+            .setFooter({ النص: `ط¨ظˆط§ط³ط·ط© ${message.author.tag}`، عنوان URL للأيقونة: message.author.displayAvatarURL() })
+            .setTimestamp();
+        الرسالة.القناة.إرسال({ تضمينات: [تضمين] });
+    } catch (خطأ) {
+        message.reply('طط¯ط« ط®ط·ط £ ط £ ط«ظ†ط§ط، ظ…ط§ظˆظ„ط© ط·ط±ط¯ ط§ظ„ظ…ط³طھط®ط¯ظ ….');
+    }
+}
+
+    // -ظ‚ظپظ„
+    إذا (command === '-ظ‚ظپظ„' && hasAdminPermission) {
+        يحاول {
+            انتظر الرسالة.channel.permissionOverwrites.edit(message.guild.roles.everyone, {
+                إرسال الرسائل: false
+            });
+
+            const embed = new EmbedBuilder()
+                .setTitle('ًں”' ظ‚ظظ„')
+                .setDescription(`طھظ… ظ‚ظپظ„ ط§ظ„ظ‚ظ†ط§ط© ${message.channel.name}.`)
+                .setColor('#ff0000')
+                .setFooter({ النص: `ط¨ظˆط§ط³ط·ط© ${message.author.tag}`، عنوان URL للأيقونة: message.author.displayAvatarURL() })
+                .setTimestamp();
+            انتظر الرسالة.القناة.إرسال({ تضمينات: [تضمين] });
+        } catch (خطأ) {
+            console.error('خطأ في قفل القناة:', error.message);
+            message.reply(`طط¯ط« ط®ط·ط £ ط £ ط«ظ†ط§ط، ظ…طط§ظˆظ«ط© ظ‚ظپظ« ط§ظ‹ظ‚ظ†ط§ط©: ${error.message}`);
+        }
+    }
+
+    إذا (الأمر === '-ظپطھط' && hasAdminPermission) {
+        يحاول {
+            انتظر الرسالة.channel.permissionOverwrites.edit(message.guild.roles.everyone, {
+                إرسال الرسائل: صحيح
+            });
+
+            const embed = new EmbedBuilder()
+                .setTitle('العنوان')
+                .setDescription(`طھظ… ظپطھط ط§ظ„ظ‚ظ†ط§ط© ${message.channel.name}.`)
+                .setColor('#81C784') // ظˆظ† ط £ط®ط¶ط±
+                .setFooter({ النص: `ط¨ظˆط§ط³ط·ط© ${message.author.tag}`، عنوان URL للأيقونة: message.author.displayAvatarURL() })
+                .setTimestamp();
+            انتظر الرسالة.القناة.إرسال({ تضمينات: [تضمين] });
+        } catch (خطأ) {
+            console.error('خطأ في إلغاء قفل القناة:', error.message);
+            message.reply(`طط¯ط« ط®ط·ط £ ط £ ط«ظ†ط§ط، ظ…طط§ظˆظ„ط© ظپطھط ط§ظ„ظ‚ظ†ط§ط©: ${خطأ .message}`);
+    }
+}
+
+    إذا (الأمر === '-ط§ط±ط³ط§ظ„' && hasAdminPermission) {
+        عضو ثابت = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
+        ثابت messageContent = args.slice(1).join(' ');
+
+        إذا لم يكن (عضوًا || لم يكن محتوى الرسالة) {
+            رسالة العودة.رد('ظٹط±ط¬ظ‰ طھطط¯ظٹط¯ ط§ظ„ظ…ط³طھط®ط¯ظ… ظˆط§ظ„ط±ط³ط§ظ„ط© ظ„ظ„ط¥ط±ط³ط§ ظ ".');
+        }
+
+        يحاول {
+            انتظر العضو.إرسال(محتوى الرسالة)؛
+            message.reply('طھظ… ط¥ط±ط³ط§ظ‹ ط§ظ‹ط±ط³ط§ظ‹ط© ط¨ظ†ط¬ط§ط.');
+        } catch (خطأ) {
+            message.reply('طھط¹ط°ط± ط¥ط±ط³ط§ظ‹ ط§ظ‹ط±ط³ط§ظ‹ط©.ط±ط¨ظ…ط§ طھظƒظˆظ† ط±ط³ط§ط¦ظ‹ ط§ ظ‡ط§ط¯ظ© ظ…ط;ظ„ظ‚ط© ظ„ظ‡ط°ط§ ط§ظ„ظ…ط³طھط®ط¯ظ….');
+        }
+    }
+
+إذا (الأمر === '-ط±ظˆظ„' && hasAdminPermission) {
+    عضو ثابت = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
+    ثابت الدور = message.mentions.roles.first() || message.guild.roles.cache.get(args[1]);
+
+    إذا لم يكن (عضوًا || لم يكن دوره) {
+        return message.reply('ظٹط±ط¬ظ‰ طھطط¯ظٹط¯ ط§ظ„ظ…ط³طھط®ط¯ظ… ظˆط§ط³ظ… ط§ظ„ط±طھط¨ط©.');
+    }
+
+    // طھطظ‚ظ‚ ظ…ظ† ط§ظ„ط±طھط¨ط©
+    إذا (موضع الدور >= أدوار عضو الرسالة. أعلى موضع) {
+        return message.reply('ظ„ط§ ظٹظ…ظƒظ†ظƒ ظ…ظ†ط ط±طھط¨ط© ط £ط¹ظ„ظ‰ ظ…ظ† ط±طھط¨طھظƒ.');
+    }
+
+    يحاول {
+        انتظر member.roles.add(الدور)؛
+        const embed = new EmbedBuilder()
+            .setTitle('ًںڈ… ط¥ط¶ط§ظپط© ط±ظˆظ„')
+            .setDescription(`طھظ… ط¥ط¶ط§ظپط© ط§ظ„ط±طھط¨ط© ${role.name} ظظ„ظ…ط³طھط®ط¯ظ… ${ member.user.tag} .`)
+            .setColor('#4DB6AC')
+            .setFooter({ النص: `ط¨ظˆط§ط³ط·ط© ${message.author.tag}`، عنوان URL للأيقونة: message.author.displayAvatarURL() })
+            .setTimestamp();
+        الرسالة.الرد({ تضمين: [تضمين] });
+    } catch (خطأ) {
+        message.reply('طط¯ط« ط®ط·ط £ ط £ ط«ظ†ط§ط، ظ…ط§ظˆظ«ط© ط¥ط¶ط§ظپط© ط§ظ„ط±طھط¨ط © ظℓظ…ط³طھط®ط¯ظ….');
+    }
+}
+
+إذا (الأمر === '-ط³طط¨' && hasAdminPermission) {
+    عضو ثابت = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
+    ثابت الدور = message.mentions.roles.first() || message.guild.roles.cache.get(args[1]);
+
+    إذا لم يكن (عضوًا || لم يكن دوره) {
+        return message.reply('ظٹط±ط¬ظ‰ طھطط¯ظٹط¯ ط§ظ„ظ…ط³طھط®ط¯ظ… ظˆط§ط³ظ… ط§ظ„ط±طھط¨ط©.');
+    }
+
+    إذا (موضع الدور >= أدوار عضو الرسالة. أعلى موضع) {
+        return message.reply('ظ„ط§ ظٹظ…ظƒظ†ظƒ ط³طط¨ ط±طھط¨ط© ط £ط¹ظ„ظ‰ ظ…ظ† ط±طھط¨طھظƒ.');
+    }
+
+    يحاول {
+        انتظر member.roles.remove(الدور)؛
+        const embed = new EmbedBuilder()
+            .setTitle('ًںڈ… ط³طط¨ ط±ظˆظ„')
+            .setDescription(`طھظ… ط³طط¨ ط§ظ„ط±طھط¨ط© ${role.name} ظ…ظ† ط§ظ„ظ…ط³طھط®ط¯ظ… ${ member.user.tag}.` )
+            .setColor('#80CBC4') // ظظˆظ† ط £ط®ط¶ط± ظ…ط§ط¦ظ ظظ‹ط £ط²ط±ظ‚ ظپط§طھط
+            .setFooter({ النص: `ط¨ظˆط§ط³ط·ط© ${message.author.tag}`، عنوان URL للأيقونة: message.author.displayAvatarURL() })
+            .setTimestamp();
+        الرسالة.الرد({ تضمين: [تضمين] });
+    } catch (خطأ) {
+        message.reply('طط¯ط« ط®ط·ط £ ط £ ط«ظ†ط§ط، ظ…طط§ظˆظ«ط© ط³طط¨ ط§ظ«ط±طھط¨ط© ظ…ظ† ط §ظ‹ظ…ط³طھط®ط¯ظ….');
+    }
+}
+
+
+    إذا (الأمر === '-ط§ظ†ط°ط§ط±' && لديه إذن المسؤول) {
+        عضو ثابت = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
+        السبب الثابت = args.slice(1).join(' ');
+
+        إذا لم يكن (! عضو || ! سبب) {
+            رد الرسالة.
+        }
+
+        إذا لم يكن (warnings[member.id]) {
+            التحذيرات[معرف العضو] = []؛
+        }
+
+        تحذيرات[معرف العضو].push({ السبب: السبب، الطابع الزمني: تاريخ جديد().toISOString() });
+        fs.writeFileSync(warningsFilePath، JSON.stringify(التحذيرات));
+
+        ثابت warnnumber = warns[member.id].length؛
+
+        const embed = new EmbedBuilder()
+            .setTitle('âڑ ï¸ڈ ط¥ظ†ط°ط§ط±')
+            .setDescription(`طھظ… ط¥طط¯ط§ط± ط¥ظ†ط°ط§ط± ظ„ظ„ظ…ط³طھط®ط¯ظ… ${ member.user.tag}.\nط§ظ„ ط³ط¨ط¨: ${reason}\nط§ظ„ظ…ط³ط¤ظˆظ„: ${message.author.tag}\nط±ظ‚ظ… ط§ظ„ط¥ظ†ط°ط§ط± : ${warningNumber}`)
+            .setColor('#FFEB3B') // ظ„ظˆظ† ط £طμظپط±
+            .setFooter({ النص: `ط¨ظˆط§ط³ط·ط© ${message.author.tag}`، عنوان URL للأيقونة: message.author.displayAvatarURL() })
+            .setTimestamp();
+        الرسالة.الرد({ تضمين: [تضمين] });
+
+        const privateEmbed = new EmbedBuilder()
+            .setTitle('âڑ ï¸ڈ ط¥ظ†ط°ط§ط±')
+            .setDescription(`طھظ… ط¥طط¯ط§ط± ط¥ظ†ط°ط§ط± ظ„ظƒ ط¨ط³ط¨ط¨: ${reason}\nط§ظ„ظ…ط³ط¤ظˆظ„: ${message.author.tag}\nط±ظ‚ظ… ط§ظ„ط¥ظ†ط°ط§ط±: ${warningNumber}`)
+            .setColor('#FFA500') // ظˆظ† ط¨ط±طھظ‚ط§ظ„ظٹ
+            .setFooter({ النص: `ظ…ظ† ط³ظٹط±ظپط± ${message.guild.name}`، عنوان URL للأيقونة: message.guild.iconURL() })
+            .تعيين الطابع الزمني()
+            .setThumbnail(member.user.displayAvatarURL({ ديناميكي: صحيح، الحجم: 1024 }))
+            .setAuthor({ الاسم: message.guild.name، iconURL: message.guild.iconURL() });
+
+        يحاول {
+            انتظر العضو.إرسال({ embeds: [privateEmbed] });
+        } catch (خطأ) {
+            console.log(`طھط¹ط°ط± ط¥ط±ط³ط§ظ„ ط±ط³ط§ظ„ط© ط®ط§طμط© ط¥ظ„ظ‰ ${ member.user.tag}. ط±ط¨ ظ…ط§ طھظƒظˆظ† ط§ظ„ط±ط³ط§ط¦ظ„ ط§ظ„ط®ط§طط© ظ…ط;ظ„ظ‚ط©.`);
+        }
+    }
+
+    إذا (الأمر === '-ط§ظ„ط§ظ†ط°ط§ط±ط§طھ' && لديه إذن المسؤول) {
+        عضو ثابت = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
+
+        إذا لم يكن (عضوًا) {
+            رد الرسالة.رد('ظٹط±ط¬ظ‰ طھطط¯ظٹط¯ ط§ظ„ظ…ط³طھط®ط¯ظ….');
+        }
+
+        const userWarnings = warns[member.id] || [];
+
+        إذا (userWarnings.length === 0) {
+            رد الرسالة.رد(`ط§ظ‹ظ…ط³طھط®ط¯ظ… ${ member.user.tag} ظ„ظٹط³ ظ„ط¯ظٹظ‡ ط £ظٹ ط¥ظ†ط°ط§ط±ط§ طھ.`);
+        }
+
+        const warnlist = userWarnings.map((warning, index) => `**${index + 1}.** ${warning.reason} (التاريخ: ${new Date(warning.timestamp).toLocaleDateString()})`).join('\n');
+        const embed = new EmbedBuilder()
+            .setTitle(`ط¥ظ†ط°ط§ط±ط§طھ ${member.user.tag}`)
+            .setDescription(قائمة التحذير)
+            .setColor('#FFEB3B') // ظ„ظˆظ† ط £طμظپط±
+            .setFooter({ النص: `ط·ظ„ط¨ ط¨ظˆط§ط³ط·ط© ${message.author.tag}`, iconURL: message.author.displayAvatarURL() })
+            .setTimestamp();
+        الرسالة.الرد({ تضمين: [تضمين] });
+    }
+
+    إذا (الأمر === '-ط§ط²ط§ظ„ط©' && لديه إذن المسؤول) {
+        عضو ثابت = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
+
+        إذا لم يكن (عضوًا) {
+            رد الرسالة.رد('ظٹط±ط¬ظ‰ طھطط¯ظٹط¯ ط§ظ„ظ…ط³طھط®ط¯ظ….');
+        }
+
+        const userWarnings = warns[member.id] || [];
+
+        إذا (userWarnings.length === 0) {
+            رد الرسالة.رد(`ط§ظ‹ظ…ط³طھط®ط¯ظ… ${ member.user.tag} ظ„ظٹط³ ظ„ط¯ظٹظ‡ ط £ظٹ ط¥ظ†ط°ط§ط±ط§ طھ.`);
+        }
+
+        صف ثابت = جديد ActionRowBuilder()
+            .إضافة المكونات(
+                ButtonBuilder جديد
+                    .setCustomId('إزالة الكل')
+                    .setLabel('ط¥ط²ط§ظ‹ط© ط¬ظ…ظٹط¹ ط§ظ‹ط¥ظ†ط°ط§ط±ط§طھ')
+                    .setStyle(نمط الزر.خطر)،
+                ButtonBuilder جديد
+                    .setCustomId('إزالة_الأخيرة')
+                    .setLabel('ط¥ط²ط§ظ„ط© ط¢ط®ط± ط¥ظ†ط°ط§ط±')
+                    .setStyle(نمط الزر الأساسي)
+            );
+
+        const embed = new EmbedBuilder()
+            .setTitle(`ط¥ط¯ط§ط±ط© ط¥ظ†ط°ط§ط±ط§طھ ${member.user.tag}`)
+            .setDescription('ظٹط±ط¬ظ‰ ط§ط®طھظٹط§ط± ط§ظ„ط¥ط¬ط±ط§ط، ط§ظ„ظ…ط·ظ„ظˆط¨:')
+            .setColor('#FFEB3B') // ظ„ظˆظ† ط £طμظپط±
+            .setFooter({ النص: `ط·ظ„ط¨ ط¨ظˆط§ط³ط·ط© ${message.author.tag}`, iconURL: message.author.displayAvatarURL() })
+            .setTimestamp();
+
+        const response = await message.reply({ embeds: [embed], components: [row] });
+
+        ثابت الفلتر = i => i.user.id === message.author.id؛
+        const collector = response.createMessageComponentCollector({ filter, componentType: ComponentType.Button, time: 15000 });
+
+        collector.on('جمع', غير متزامن i => {
+            إذا (i.customId === 'إزالة الكل') {
+                حذف التحذيرات[member.id]؛
+                fs.writeFileSync(warningsFilePath، JSON.stringify(التحذيرات));
+
+                انتظار i.update({ content: `طھظ… ط¥ط²ط§ظ„ط© ط¬ظ…ظٹط¹ ط¥ظ†ط°ط§ط±ط§طھ ${ member.user.tag}.`, يدمج: []، عناصر: [] })؛
+            } وإلا إذا (i.customId === 'remove_last') {
+                تحذيرات المستخدم.pop();
+                fs.writeFileSync(warningsFilePath، JSON.stringify(التحذيرات));
+
+                انتظار i.update({ content: `طھظ… ط¥ط²ط§ظ„ط© ط¢ط®ط± ط¥ظ†ط°ط§ط± ظ…ظ† ${ member.user.tag}.`, التضمين: []، المكونات: [] });
+            }
+        });
+
+        جامع.on('النهاية'، المجمعة => {
+            إذا (الحجم المجمع === 0) {
+                Response.edit({ content: 'ط§ظ†طھظ‡ظ‰ ط§ظ„ظˆظ‚طھ ط¯ظˆظ† ط§ط®طھظٹط§ط± ط £ظٹ ط¥ط¬ط±ط§ط،.' ، يدمج: []، المكونات: [] });
+            }
+        });
+    }
+
+    إذا (الأمر === '-ط§ظپطھط§ط±') {
+        عضو ثابت = message.mentions.members.first() || message.guild.members.cache.get(args[0]) || message.member;
+
+        const avatarEmbed = new EmbedBuilder()
+            .setColor('#050505')
+            .setTitle(`ط£ظپط§طھط§ط± ${member.user.tag}`)
+            .setImage(member.user.displayAvatarURL({ ديناميكي: صحيح، الحجم: 1024 }))
+            .setFooter({ النص: `ط·ظ„ط¨ ط¨ظˆط§ط³ط·ط© ${message.author.tag}`, iconURL: message.author.displayAvatarURL() });
+        الرسالة.القناة.إرسال({ تضمين: [avatarEmbed] });
+    }
+
+    إذا (الأمر === '-ط³ظٹط±ظپط±') {
+        ثابت { النقابة } = رسالة؛
+
+        const serverEmbed = new EmbedBuilder()
+            .setColor('#050505')
+            .setTitle(`ظ…ط¹ظ„ظˆظ…ط§طھ ط§ظ„ط³ظٹط±ظپط±: ${guild.name}`)
+            .setThumbnail(guild.iconURL({ ديناميكي: صحيح }))
+            .إضافة الحقول(
+                { الاسم: 'ط¹ط¯ط¯ ط§ظ„ط£ط¹ط¶ط§ط،', القيمة: guild.memberCount.toString(), المضمنة: true },
+                { الاسم: 'طھط§ط±ظٹط® ط§ظ„ط¥ظ†ط´ط§ط،', القيمة: guild.createdAt.toDateString(), المضمنة: true },
+                { الاسم: 'ط§ظ„ظ…ط§ظ„ظƒ', القيمة: `<@${guild.ownerId}>`, المضمن: صحيح },
+                { الاسم: 'ط§ظ„ظ…ظ†ط·ظ‚ط©'، القيمة: guild.preferredLocale، المضمنة: true },
+                { الاسم: 'ط¹ط¯ط¯ ط§ظ„ط£ط¯ظˆط§ط±'، القيمة: guild.roles.cache.size.toString()، المضمنة: true }،
+                { الاسم: 'ط¹ط¯ط¯ ط§ظ„ظ‚ظ†ظˆط§طھ ط§ظ„ظ†طµظٹط©'، القيمة: guild.channels.cache.filter(channel => channel.type === 0).size.toString()، مضمن: صحيح },
+                { الاسم: 'ط¹ط¯ط¯ ط§ظ„ظ‚ظ†ظˆط§طھ ط§ظ„طµظˆطھظٹط©'، القيمة: guild.channels.cache.filter(channel => channel.type === 2).size.toString()، مضمن: صحيح }،
+                { الاسم: 'طھظ… ط§ظ„طھطظ‚ظ‚ ظ…ظ†ظ‡'، القيمة: النقابة.تم التحقق منها ? 'ظ†ط¹ظ…' : 'ظ«ط§'، مضمّن: صحيح }
+            )
+            .setFooter({ النص: `ط·ظ„ط¨ ط¨ظˆط§ط³ط·ط© ${message.author.tag}`, iconURL: message.author.displayAvatarURL() });
+        الرسالة.القناة.إرسال({ تضمينات: [تضمين الخادم] });
+    }
+
+    إذا (الأمر === '-ط¨ظ†ط±') {
+        عضو ثابت = message.mentions.members.first() || message.guild.members.cache.get(args[0]) || message.member;
+        const المستخدم = انتظار client.users.fetch(member.id، { فرض: صحيح });
+
+        const bannerUrl = user.bannerURL({ ديناميكي: صحيح، الحجم: 1024 });
+        إذا (عنوان البانر) {
+            const bannerEmbed = new EmbedBuilder()
+                .setColor('#050505')
+                .setTitle(`ط¨ظ†ط± ${user.tag}`)
+                .setImage(عنوان البانر)
+                .setFooter({ النص: `ط·ظ„ط¨ ط¨ظˆط§ط³ط·ط© ${message.author.tag}`, iconURL: message.author.displayAvatarURL() });
+            الرسالة.القناة.إرسال({ تضمين: [تضمين لافتة] });
+        } آخر {
+            message.reply('ظ‹ط§ ظٹظˆط¬ط¯ ط¨ظ†ط± ظ‹ظ‡ط°ط§ ط§ظ‹ظ…ط³طھط®ط¯ظ….');
+        }
+    }
+
+    // -يساعد
+    إذا (الأمر === '-help') {
+        const helpEmbed = new EmbedBuilder()
+            .setColor('#000000') // ظˆظ† ط§ط³ظˆط¯
+            .setTitle('ط£ظˆط§ظ…ط± ط§ظ„ط¨ظˆطھ')
+            .إضافة الحقول(
+                { الاسم: 'ط £ظˆط§ظ…ط± ط§ظ„ظ…ط³ط¤ظˆظ„ظٹظ†', القيمة: `
+                **-ظ…ظٹظˆطھ [@ط§ظ„ظ…ط³طھط®ط¯ظ…] [ط§ظ„ظ…ط¯ط©]**: ط¥ط¹ط·ط§ط، ط§ظ„ظ… ط³طھط®ط¯ظ… ظ…ظٹظˆطھ ظ„ظ…ط¯ط© ظ…طط¯ط¯ط©.
+                **-ظپظƒ ط§ظ‹ظ…ظٹظˆطھ [@ط§ظ„ظ…ط³طھط®ط¯ظ…]**: ظپظƒ ط§ظ„ظ…ظٹظˆطھ ط¹ظ† ط§ظ„ظ…ط³طھط®ط¯ظ ….
+                **-ط¨ط§ظ†ط¯ [@ط§ظ„ظ…ط³طھط®ط¯ظ…] [ط§ظ„ظ…ط¯ط©]**: ط¸ط± ط§ظ„ظ …ط³طھط®ط¯ظ… ظ„ظ…ط¯ط© ظ…طط¯ط¯ط©.
+                **-ط·ط±ط¯ [@ط§ظ„ظ…ط³طھط®ط¯ظ…]**: ط·ط±ط¯ ط§ظ„ظ…ط³طھط®ط¯ظ… ظ…ظ† ط §ظ„ط³ظٹط±ظپط±.
+                **-ظ‚ظپظ‹**: ظ‚ظپظ‹ ط§ظ‹ظ‚ظ†ط§ط©.
+                **-ظپطھط**: ظپطھط ط§ظ„ظ‚ظ†ط§ط©.
+                **-ط§ط±ط³ط§ظ‹ [@ط§ظ„ظ…ط³طھط®ط¯ظ…] [ط§ظ‹ط±ط³ط§ظ‹ط©]**: ط¥ط±ط³ط§ظ ‹ ط±ط³ط§ظ‹ط© ط®ط§طط© ظ‹ظ‹ظ…ط³طھط®ط¯ظ….
+                **-ط±ظˆظ‹ [@ط§ظ„ظ…ط³طھط®ط¯ظ…] [ظ…ط¹ط±ظپ ط§ظ„ط±طھط¨ط©]**: ط¥ط¹ط·ط§ط، ط§ظ„ظ…ط³طھط®ط¯ظ… ط±طھط¨ط© ظ…طط¯ط¯ط©.
+                **-ط³طط¨ ط±ظˆظ‹ [@ط§ظ„ظ…ط³طھط®ط¯ظ…] [ظ…ط¹ط±ظپ ط§ظ„ط±طھط¨ط©]**: ط³طط¨ ط±طھط¨ ط© ظ…طط¯ط¯ط© ظ…ظ† ط§ظ„ظ…ط³طھط®ط¯ظ….
+                **-ط§ظ†ط°ط§ط± [@ط§ظ„ظ…ط³طھط®ط¯ظ…] [ط§ظ„ط³ط¨ط¨]**: ط¥ط¹ط·ط§ط، ط §ظ„ظ…ط³طھط®ط¯ظ… ط¥ظ†ط°ط§ط± ظ…ط¹ ط§ظ„ط³ط¨ط¨.
+                **-ط§ظ„ط§ظ†ط°ط§ط±ط§طھ [@ط§ظ„ظ…ط³طھط®ط¯ظ…]**: ط¹ط±ط¶ ط¬ظ…ظٹط¹ ط¥ظ †ط°ط§ط±ط§طھ ط§ظ„ظ…ط³طھط®ط¯ظ….
+                **-ط§ط²ط§ظ„ط© [@ط§ظ„ظ…ط³طھط®ط¯ظ…]**: ط¥ط²ط§ظ„ط© ط¬ظ…ظٹط¹ ط§ظ„ط¥ظ† ط°ط§ط±ط§طھ ط £ظˆ طˆط®ط± ط¥ظ†ط°ط§ط±.
+                `, مضمن: خطأ },
+                { الاسم: 'ط§ظ‹ط £ظˆط§ظ…ط± ط§ظ‹ط¹ط§ظ…ط©'، القيمة: `
+                **-ط§ظپطھط§ط± [@ط§ظ„ظ…ط³طھط®ط¯ظ…]**: ط¹ط±ط¶ ط £ظپط§طھط§ط± ط§ظ„ظ…ط³طھط®ط¯ظ ….
+                **-ط³ظٹط±ظپط±**: ط¹ط±ط¶ ظ…ط¹ظ„ظˆظ…ط§طھ ط§ظ„ط³ظٹط±ظپط±.
+                **-ط¨ظ†ط± [@ط§ظ„ظ…ط³طھط®ط¯ظ…]**: ط¹ط±ط¶ ط¨ظ†ط± ط§ظ„ظ…ط³طھط®ط¯ظ….
+                `, inline: false }
+            )
+            .setFooter({ text: 'ط§ط³طھط®ط¯ظ… ط§ظ„ط £ظˆط§ظ…ط± ط§ظ„ط¥ط¯ط§ط±ظٹط© ط¨ط¹ظ†ط§ظٹط©! '، iconURL: client.user.displayAvatarURL() })
+            .setTimestamp();
+
+        الرسالة.القناة.إرسال({ تضمينات: [مساعدة التضمين] });
+    }
+});
+
+العميل.on('إنشاء رسالة', (رسالة) => {
+  إذا (message.author.bot) العودة؛
+
+  إذا (message.content.toLowerCase() === 'ظ…ط±طط¨ط§') {
+    الرسالة.القناة.إرسال('ط£ظ‡ظ„ط§ظ‹ ط¨ظƒ!');
+  }
+
+إذا (محتوى الرسالة إلى حالة الأحرف الصغيرة ()) {
+    message.channel.send('**__~~~ط £طظ„ظ‰ ظ…ظ† ظٹظ†ظ‚ط· ظپظٹ ط§ظ„ط´ط§طھ | ~~__**');
+  }
+
+إذا (message.content.toLowerCase() === 'ط§ظ‹ط³ظ‹ط§ظ… ط¹ظ‹ظٹظƒظ…') {
+    message.channel.send('**__ط¹ظ‹ظٹظƒظ… ط§ظ‹ط³ظ‹ط§ظ… ظˆط±طظ…ط© ط§ظ„ظ‹ظ‡ ظˆط¨ط±ظƒط§طھظ‡__**') ;
+  }
+
+إذا (message.content.toLowerCase() === 'ط³ظ‹ط§ظ… ط¹ظ‹ظٹظƒظ…') {
+    message.channel.send('**__ط¹ظ‹ظٹظƒظ… ط§ظ‹ط³ظ‹ط§ظ… ظˆط±طظ…ط© ط§ظ„ظ‹ظ‡ ظˆط¨ط±ظƒط§طھظ‡__**') ;
+  }
+
+  إذا (message.content.toLowerCase() === 'ظƒظٹظپ طط§ظ„ظƒطں') {
+    message.channel.send('ط £ظ†ط§ ط¨ظˆطھطŒ ط¯ط§ط¦ظ…ظ‹ط§ ظپظٹ ط £طط³ظ† طط§ظ„! ںکٹ');
   }
 });
 
-client.login('919917512274112513');001739
+العميل.on('إنشاء رسالة', (رسالة) => {
+  إذا (message.author.bot) العودة؛
+
+  إذا (يبدأ محتوى الرسالة بـ('قل')) {
+    إذا لم يكن (message.member.permissions.has('المسؤول')) {
+      return message.channel.send('ظ‹ظٹط³ ظ‹ط¯ظٹظƒ ط§ظ‹طظ‹ظ‹ط§طظٹط§طھ ط§ظظ„ظ‹ط§ط²ظ…ط© ظ‹ط§ط³طھط®ط¯ط§ظ … ظ‡ط°ط§ ط§ظ„ط £ظ…ط±.');
+    }
+
+    const mentionChannel = message.mentions.channels.first();
+    ثابت textToSend = message.content.split(' ').slice(2).join(' ');
+
+    إذا لم يتم ذكر القناة
+      return message.channel.send('ظٹط±ط¬ظ‰ طھطط¯ظٹط¯ ط§ظ„ظ‚ظ†ط§ط© ط¨ط§ط³طھط®ط¯ط§ظ… ط§ظ„ط¥ط´ ط§ط±ط© (#channel).');
+    }
+
+    إذا لم يكن (النص للإرسال) {
+      return message.channel.send('ظٹط±ط¬ظ‰ ظƒطھط§ط¨ط© ط§ظ„ظ†طμ ط§ظ„ط°ظٹ طھط±ظٹط¯ ط¥ط±ط³ط§ظ„ظ‡ ط¨ ط¹ط¯ ط§ظ‹ط¥ط´ط§ط±ط© ظ‹ظ‹ظ‚ظ†ط§ط©.');
+    }
+
+    mentionChannel.send(textToSend)
+      .ثم(() => {
+        message.channel.send('طھظ… ط¥ط±ط³ط§ظ‹ ط§ظ‹ط±ط³ط§ظ‹ط© ط¨ظ†ط¬ط§ط!');
+      })
+      .catch((خطأ) => {
+        console.error(خطأ);
+        message.channel.send('طط¯ط« ط®ط·ط £ ط £ ط«ظ†ط§ط، ط¥ط±ط³ط§ظ‹ ط§ظ‹ط±ط³ط§ظ‹ط©.') ;
+      });
+  }
+});
+
+    العميل.on('إنشاء رسالة', (رسالة) => {
+      إذا (message.author.bot) العودة؛
+
+      const ROLE_IDS = ['', '1279129771808133151', '1279247062986129439', '1279129775897837570', '1279129770243653665']; // طط · ط§ظٹط¯ظٹ ط§ظ„ط±طھط¨ظ‡ ظ‡ظ†ط§
+
+      إذا (محتوى الرسالة يبدأ بـ('ظ…ط³ط')) {
+        // طھطظ‚ظ‚ ظ…ظ† ط £ظ† ط§ظ‹ط¹ط¶ظˆ ظط¯ظٹظ‡ ط £ظٹ ظ…ظ† ط§ظ‹ط±طھط¨ ط§ظ‹ظ…طط¯ ط¯ط©
+        ثابت hasRole = ROLE_IDS.some(معرف الدور => message.member.roles.cache.has(معرف الدور));
+        إذا لم يكن لديه دور
+          const noPermissionEmbed = new EmbedBuilder()
+            .setColor('#FF0000') // ظˆظ† ط £طظ…ط±
+            .setTitle('â›“ ظ„ظٹط³ ظ„ط¯ظٹظƒ ط§ظ„طμظ„ط§طظٹط§طھ!')
+            .setDescription('âڑ ï¸ڈ ظ„ط§ ظٹظ…ظƒظ†ظƒ ط§ط³طھط®ط¯ط§ظ… ظ‡ط°ط§ ط§ظ„ط £ظ…ط± ظ„ط £ظ†ظƒ ظ «ط§ طھظ…ظ«ظƒ ط§ظ»ط±طھط¨ط© ط§ظ«ظ…ط·ظ«ظˆط¨ط©.')
+            .setFooter({ text: 'ظٹط±ط¬ظ‰ ط§ظ‹ط§طھطμط§ظ‹ ط¨ظ…ط³ط¤ظˆظ‹ ط§ظ„ط®ط§ط¯ظ… ظظ…ط²ظٹط¯ ظ …ظ† ط§ظ‹ظ…ط¹ظ‹ظˆظ…ط§طھ });
+
+          إرجاع الرسالة. الرد ({ تضمينات: [noPermissionEmbed] });
+        }
+
+        const args = message.content.split(' ');
+        ثابت deleteCount = parseInt(args[1]، 10)؛
+
+        إذا لم يتم حذف عدد || حذف عدد < 1 || حذف عدد > 100) {
+          ثابت غير صالحNumberEmbed = جديد EmbedBuilder()
+            .setColor('#FFA500') // ظˆظ† ط¨ط±طھظ‚ط§ظ„ظٹ
+            .setTitle('â‌— ط¹ط¯ط¯ ط؛ظٹط± طμطظٹط!')
+            .setDescription('ظٹط±ط¬ظ‰ طھطط¯ظٹط¯ ط¹ط¯ط¯ طμطظٹط ظ…ظ† ط§ظ„ط±ط³ط§ط¦ظ„ ظظ„ط°ظپ (ط¨ظٹظ† 1 ظˆ100) .')
+            .setFooter({ text: 'ظٹط±ط¬ظ‰ ط§ظ„ظ…ط§ظˆظ„ط© ظ…ط±ط© ط £ط®ط±ظ‰.' });
+
+          إرجاع الرسالة. الرد ({ تضمينات: [رقم تضمين غير صالح] });
+        }
+
+        الرسالة.القناة.الحذف بالجملة(عدد الحذف + 1)
+          .ثم(الرسائل المحذوفة => {
+            const successEmbed = new EmbedBuilder()
+              .setColor('#00FF00') // ظˆظ† ط £ط®ط¶ط±
+              .setTitle('âœ… طھظ… ط§ظ„طط°ظپ ط¨ظ†ط¬ط§ط!')
+              .setDescription(`ًں—'ï¸ڈ طھظ… طط°ظپ ${deletedMessages.size - 1} ط±ط³ط§ظ„ط© ط¨ظ†ط¬ط§ط.`)
+              .setFooter({ text: 'ط´ظƒط±ط§ظ‹ ظ„ط§ط³طھط®ط¯ط§ظ…ظƒ ط§ظ„ط¨ظˆطھ!' });
+
+            الرسالة.القناة.إرسال({ تضمينات: [تضمين ناجح] })
+              .ثم(الرسالة => {
+                setTimeout(() => msg.delete()، 5000)؛  
+              });
+          })
+          .catch(خطأ => {
+            console.error(خطأ);
+            ثابت errorEmbed = جديد EmbedBuilder()
+              .setColor('#FF0000') // ظˆظ† ط £طظ…ط±
+              .setTitle('â‌Œ ط®ط·ط £ ظپظٹ ط§ظ‹طط°ظپ!')
+              .setDescription('âڑ ï¸ڈ طط¯ط« ط®ط·ط £ ط £ ط«ظ†ط§ط، ظ…ط§ظˆظ«ط© طط°ظپ ط§ظ«ط±ط³ط§ط¦ظ „. )
+              .setFooter({ text: 'ظٹط±ط¬ظ‰ ط§ظ„ظ…ط§ظˆظ„ط© ظ„ط§طظ‚ظ‹ط§.' });
+
+            الرسالة.القناة.إرسال({ تضمينات: [خطأ تضمين] });
+          });
+      }
+    });
+
+
+
+العميل.on('إنشاء رسالة'، الرسالة => {
+  إذا (message.author.bot) العودة؛
+
+  معرف القناة الثابت = ['1279445229090639872', '1279127985483419732', '1279127774853992501', '1279128042307846286', '1279128872079593514', '1279127672169041961', '1279127723532353679', '1279126824634552331']; // ط§ط³طھط¨ط¯ظ‹ ظ‡ط°ظ‡ معرف ط§ظ‹طھظٹ طھط±ظٹط¯ظ‡ط§
+  const imageUrl = 'https://imgur.com/a/foFHrup'; // ط§ط³طھط¨ط¯ظ„ ظ‡ط°ط§ ط¨ط±ط§ط¨ط· ط§ظ„طμظˆط±ط© ط§ظ„ط°ظٹ طھط±ظٹط¯ظ‡
+
+  إذا (channelIds.includes(message.channel.id)) {
+    الرسالة.القناة.إرسال(عنوان URL للصورة)
+      .then(() => console.log('تم إرسال الصورة بنجاح'))
+      .catch(error => console.error('خطأ في إرسال الرسالة:', error));
+  }
+});
+
+العميل.on('إنشاء رسالة', (رسالة) => {
+  إذا عاد (message.author.bot)؛ // طھط¬ط§ظ‡ظ‹ ط§ظ‹ط±ط³ط§ط¦ظ‹ ظ…ظ† ط§ظ‹ط¨ظˆطھط§طھ
+
+  const roleId = '1279129770243653665'; // ط§ط³طھط¨ط¯ظ„ ظ‡ط°ط§ ط¨ظ…ط¹ط±ظپ ط§ظ„ط±طھط¨ط© ط§ظ„ط®ط§طط© ط¨ظƒ
+
+  إذا (الرسالة.عضو.أدوار.ذاكرة التخزين المؤقت.لديه(معرف الدور)) {
+    إذا (message.content.toLowerCase() === '-ط®ط·') {
+      الرسالة.القناة.إرسال('https://imgur.com/a/foFHrup')
+          //ط· ط±ط§ط¨ط· ط§ظ‹طظˆط±ظ‡ ط§ظ‹ظٹ طھط¨ط;ط§ظ‡ط§
+        .ثم(() => {
+          إذا كانت الرسالة قابلة للحذف
+            الرسالة.حذف()
+              .then(() => console.log('تم حذف رسالة المستخدم بنجاح'))
+              .catch(err => console.error('خطأ في حذف رسالة المستخدم:', err));
+          } آخر {
+            console.log('الرسالة غير قابلة للحذف أو تم حذفها بالفعل.');
+          }
+        })
+        .catch(err => console.error('خطأ في إرسال رد الروبوت:', err));
+    }
+  }
+});
+
+العميل.on('إنشاء رسالة'، غير متزامن (رسالة) => {
+    إذا (message.author.bot) العودة؛
+
+    const args = message.content.split(' ');
+    الأمر الثابت = args.shift().toLowerCase();
+
+    إذا (الأمر === '-ping') {
+        const sentMessage = await message.channel.send('ًں“¶ ط¬ط§ط±ظچ ط³ط§ط¨ ط§ظ„ط¨ظ†ظ‚...');
+        const ping = sentMessage.createdTimestamp - message.createdTimestamp؛
+
+        const embed = new EmbedBuilder()
+            .setTitle('إرسال Ping!')
+            .setDescription(`**__ًں“¶ **ط§ظ„ط¨ظ†ظ‚:** ${ping}ms\n**WebSocket:** ${client.ws.ping}ms__**`)
+            .setColor('#673c9c')
+            .setFooter({ النص: `ط¨ظˆط§ط³ط·ط© ${message.author.tag}`، عنوان URL للأيقونة: message.author.displayAvatarURL() })
+            .setTimestamp();
+
+        انتظر sentMessage.edit({ المحتوى: '', التضمينات: [تضمين] });
+    }
+});
+
+العميل.on('إنشاء رسالة'، غير متزامن (رسالة) => {
+    إذا لم تبدأ (message.content.With(prefix) || message.author.bot) بالإرجاع؛
+
+    const args = message.content.slice(prefix.length).trim().split(/ +/);
+    الأمر الثابت = args.shift().toLowerCase();
+
+    دع pointsData = JSON.parse(fs.readFileSync(pointsFile));
+
+    إذا (الأمر === 'ظ†ظ‚ط·ظ‡') {
+        إذا لم يكن (!roleIds.some(roleIds => message.member.roles.cache.has(roleIds))) {
+            ثابت errorEmbed = جديد EmbedBuilder()
+                .setTitle('â‌Œ خطأ')
+                .setDescription('ظ‹ظٹط³ ظ‹ط¯ظٹظƒ ط§ظ‹طظ‹ط§طظٹط§طھ ط§ظ‹ظ‹ط§ط²ظ…ط© ظ‹ط§ط³طھط®ط¯ط§ظ… ظ‡ط °ط§ ط§ظ‹ط £ظ…ط±.')
+                .setColor('#E74C3C')
+                .setTimestamp();
+
+            إرجاع الرسالة. الرد ({ تضمينات: [خطأ تضمين] });
+        }
+
+        ثابت المستخدم = message.mentions.users.first();
+        إذا (!المستخدم) قم بإرجاع الرسالة. الرد('ظ…ظ†ط´ظ† ط§ظ„ط´ط®طμ ط§ظ„ط°ظٹ طھط±ظٹط¯ ط¥ط¹ط·ط§ط¦ظ‡ ظ †ظ‚ط·ط©.');
+
+        نقاط البيانات[معرف المستخدم] = (نقاط البيانات[معرف المستخدم] || 0) + 1؛
+
+        fs.writeFileSync(ملف النقاط، JSON.stringify(بيانات النقاط));
+
+        const embed = new EmbedBuilder()
+            .setTitle('ًں“ˆ ظ†ظ‚ط·ط© ظ…ط¶ط§ظپط©!')
+            .setDescription(`${user} ططμظ„ ط¹ظ„ظ‰ ظ†ظ‚ط·ط©! ط§ظ„ظ…ط¬ظ…ظˆط¹ ط§ظ„طط§ظ„ظٹ: **${pointsData[ user.id]}** ظ†ظ‚ط§ط·.`)
+            .setColor('#000000')
+            .setTimestamp();
+
+        الرسالة.القناة.إرسال({ تضمينات: [تضمين] });
+    }
+
+    إذا (الأمر === 'طھظˆط¨') {
+        إذا لم يكن (!roleIds.some(roleIds => message.member.roles.cache.has(roleIds))) {
+            ثابت errorEmbed = جديد EmbedBuilder()
+                .setTitle('â‌Œ خطأ')
+                .setDescription('ظ‹ظٹط³ ظ‹ط¯ظٹظƒ ط§ظ‹طظ‹ط§طظٹط§طھ ط§ظ‹ظ‹ط§ط²ظ…ط© ظ‹ط§ط³طھط®ط¯ط§ظ… ظ‡ط °ط§ ط§ظ‹ط £ظ…ط±.')
+                .setColor('#E74C3C')
+                .setTimestamp();
+
+            إرجاع الرسالة. الرد ({ تضمينات: [خطأ تضمين] });
+        }
+
+        إذا (Object.keys(pointsData).length === 0) {
+            ثابت noDataEmbed = جديد EmbedBuilder()
+                .setTitle('ًں“‰ ظ„ط§ طھظˆط¬ط¯ ظ†ظ‚ط§ط·')
+                .setDescription('ظ‹ط§ طھظˆط¬ط¯ ظ†ظ‚ط§ط· ظ…ط³ط¬ظ‹ط© ظ‹ط¹ط±ط¶ظ‡ط§.')
+                .setColor('#E74C3C')
+                .setTimestamp();
+
+            إرجاع الرسالة.القناة.إرسال({ تضمينات: [noDataEmbed] });
+        }
+
+        ثابت sortedUsers = Object.keys(pointsData).sort((a, b) => pointsData[b] - pointsData[a]).slice(0, 10);
+
+        const topEmbed = new EmbedBuilder()
+            .setTitle('ًںڈ† ط £ط¹ظ‹ظ‰ ط§ظ‹ط £ط¹ط¶ط§ط، ظ†ظ‚ط§ط·ط§ظ‹')
+            .setColor('#000000')
+            .setTimestamp();
+
+        sortedUsers.forEach((معرف المستخدم، الفهرس) => {
+            topEmbed.addFields({ الاسم: `#${index + 1}`، القيمة: `<@${userID}> - **${pointsData[userID]}** ظ†ظ‚ط§ط·` });
+        });
+
+        الرسالة.القناة.إرسال({ تضمينات: [أعلى التضمين] });
+    }
+
+    يحاول {
+        إذا (الأمر === 'ظ†ظ‚ط§ط·ظٹ') {
+            ثابت المستخدم نقاط = نقاط البيانات[رسالة.مؤلف.معرف] || 0؛
+            const embed = new EmbedBuilder()
+                .setTitle('ًں“ˆ ظ†ظ‚ط§ط·ظƒ‘)
+                .setDescription(`${message.author} ظ„ط¯ظٹظƒ **${userPoints}** ظ†ظ‚ط·ط©.`)
+                .setColor('#000000')
+                .setTimestamp();
+
+            الرسالة.القناة.إرسال({ تضمينات: [تضمين] });
+        }
+
+        إذا (الأمر === 'طھط²ظˆظٹط¯') {
+            ثابت المستخدم = message.mentions.users.first();
+            المبلغ الثابت = parseInt(args[1]);
+            إذا (!المستخدم || isNaN(amount)) قم بإرجاع الرسالة.reply('ظ…ظ†ط´ظ† ط§ظ„ط´ط®طμ ظˆطط¯ط¯ ط¹ط¯ط¯ ط§ظظ„ظ†ظ‚ ط§ط· ط§ظ‹طھظٹ طھط±ظٹط¯ ط¥ط¶ط§ظپطھظ‡ط§.');
+
+            pointsData[user.id] = (pointsData[user.id] || 0) + المبلغ؛
+
+            fs.writeFileSync(ملف النقاط، JSON.stringify(بيانات النقاط));
+
+            const embed = new EmbedBuilder()
+                .setTitle('ًں“ˆ ظ†ظ‚ط§ط· ظ…ط¶ط§ظپط©!')
+                ... ظٹ: **${pointsData[user.id]}** ظ†ظ‚ط§ط·.`)
+                .setColor('#000000')
+                .setTimestamp();
+
+            الرسالة.القناة.إرسال({ تضمينات: [تضمين] });
+        }
+
+        إذا (الأمر === 'طھظ†ظ‚ظٹطμ') {
+            ثابت المستخدم = message.mentions.users.first();
+            المبلغ الثابت = parseInt(args[1]);
+            إذا (!المستخدم || isNaN(amount)) قم بإرجاع الرسالة.reply('ظ…ظ†ط´ظ† ط§ظ„ط´ط®طμ ظˆطط¯ط¯ ط¹ط¯ط¯ ط§ظظ„ظ†ظ‚ ط§ط· ط§ظ‹طھظٹ طھط±ظٹط¯ ط®طμظ…ظ‡ط§.');
+
+            pointsData[user.id] = Math.max(0, (pointsData[user.id] || 0) - المبلغ);
+
+            fs.writeFileSync(ملف النقاط، JSON.stringify(بيانات النقاط));
+
+            const embed = new EmbedBuilder()
+                .setTitle('ًں“‰ ظ†ظ‚ط§ط· ظ…ط®طμظˆظ…ط©!')
+                .setDescription(`${user} طھظ… ط®طμظ… **${amount}** ظ†ظ‚ط§ط·! ط§ظ„ظ…ط¬ظ…ظˆط¹ ط§ظ„طط§ظ„ ظٹ: **${pointsData[user.id]}** ظ†ظ‚ط§ط·.`)
+                .setColor('#000000')
+                .setTimestamp();
+
+            الرسالة.القناة.إرسال({ تضمينات: [تضمين] });
+        }
+
+        إذا (الأمر === 'طھطµظپظٹط±') {
+            إذا لم يكن (!roleIds.some(roleIds => message.member.roles.cache.has(roleIds))) {
+                ثابت errorEmbed = جديد EmbedBuilder()
+                    .setTitle('â‌Œ خطأ')
+                    .setDescription('ظ‹ظٹط³ ظ‹ط¯ظٹظƒ ط§ظ‹طظ‹ط§طظٹط§طھ ط§ظ‹ظ‹ط§ط²ظ…ط© ظ‹ط§ط³طھط®ط¯ط§ظ… ظ‡ط °ط§ ط§ظ‹ط £ظ…ط±.')
+                    .setColor('#000000')
+                    .setTimestamp();
+
+                إرجاع الرسالة. الرد ({ تضمينات: [خطأ تضمين] });
+            }
+
+            نقاط البيانات = {};
+
+            fs.writeFileSync(ملف النقاط، JSON.stringify(بيانات النقاط));
+
+            const embed = new EmbedBuilder()
+                .setTitle('ًں”“ طھطμظپظٹط± ط¬ظ…ظٹط¹ ط§ظ„ظ†ظ‚ط§ط·!')
+                .setDescription('طھظ… طھطμظپظٹط± ظ†ظ‚ط§ط· ط¬ظ…ظٹط¹ ط§ظ„ط £ط¹ط¶ط§ط،!')
+                .setColor(0x000000)
+                .setTimestamp();
+
+            الرسالة.القناة.إرسال({ تضمينات: [تضمين] });
+        }
+
+        إذا (الأمر === 'مساعدة') {
+            const embed = new EmbedBuilder()
+                .setColor('#000000')
+                .setTitle('ًں†ک ظ‚ط§ط¦ظ…ط© ط§ظ„ط £ظˆط§ظ…ط±')
+                .إضافة الحقول(
+                    { الاسم: `ًں› ï¸ڈ ط £ظˆط§ظ…ط± ط¥ط¯ط§ط±ظٹط©`، القيمة: `${prefix}ظ†ظ‚ط·ظ‡ [@ط§ظ„ ظ…ط³طھط®ط¯ظ…]: ط¥ط¶ط§ظپط© ظ†ظ‚ط·ط© ظظ„ظ…ط³طھط®ط¯ظ… (ظ…ط®طμطط© ظ„ط°ظˆظٹ ط§ظ‹طμظ‹ط§طظٹط§طھ)\n${prefix}طھط²ظˆظٹط¯ [@ط§ظ„ظ…ط³طھط®ط¯ظ…] [ط§ظ„ط¹ط¯ط¯]: ط¥ط¶ط§ظپط© ظ†ظ‚ط§ط· ظ„ظ„ظ…ط³طھط® ط¯ظ…\n${prefix}طھظ†ظ‚ظٹطμ [@ط§ظ„ظ…ط³طھط®ط¯ظ…] [ط§ظ„ط¹ط¯ط¯]: ط®طμظ… ظ†ظ‚ط §ط· ظ…ظ† ط§ظ„ظ…ط³طھط®ط¯ظ…\n${prefix}طھطμظپظٹط±: طھطμظپظٹط± ظ†ظ‚ط§ط· ط¬ظ…ظٹط¹ ط§ظ„ط £ط¹ط¶ط§ط،\n${prefix}طھظˆط¨: ط¹ط±ط¶ ط £ط¹ظ„ظ‰ 10 ظ…ط³طھط®ط ¯ظ…ظٹظ† ط¨ط§ظ„ظ†ظ‚ط§ط·`, مضمنة: خطأ },
+                    { الاسم: `ًں“ˆ ط £ظˆط§ظ…ط± ط¹ط§ظ…ط©`, القيمة: `${prefix}ظ†ظ‚ط§ط·ظٹ: ط¹ط±ط¶ ظ†ظ‚ط§ ط·ظƒ`، مضمنة: خطأ }
+                )
+                .setFooter({ text: `ط§ط³طھط®ط¯ظ…ط§ظ‹ط £ظˆط§ظ…ط± ط¨طط°ط±!` })
+                .setTimestamp();
+
+            الرسالة.القناة.إرسال({ تضمينات: [تضمين] });
+        }
+    } catch (خطأ) {
+        console.error(خطأ);
+        ثابت errorEmbed = جديد EmbedBuilder()
+            .setTitle('â‌Œ خطأ')
+            .setDescription('طط¯ط« ط®ط·ط £ ط £ ط«ظ†ط§ط، طھظ†ظپظٹط° ط§ظ«ط £ظ…ط±.')
+            .setColor('#E74C3C')
+            .setTimestamp();
+
+        الرسالة.القناة.إرسال({ تضمينات: [خطأ تضمين] });
+    }
+});
+
+تعيين الفاصل الزمني(() => {
+    ثابت adhkarChannel = client.channels.cache.get(adhkarChannelId);
+    إذا لم يكن (adhkarChannel) {
+        console.log('لم يتم العثور على قناة Adhkar');
+        يعود؛
+    }
+
+    ثابت عشوائي Adhkar = adhkar[Math.floor(Math.random() * adhkar.length)];
+    const adhkarEmbed = new EmbedBuilder()
+        .setColor('#05131f')
+        .setTitle('ط°ظƒط±')
+        .setDescription(أذكار عشوائية)؛
+
+    adhkarChannel.send({ تضمينات: [adhkarEmbed] });
+}، 3 * 60 * 60 * 1000)؛ // 3 ط³ط§ط¹ط§طھ
+});
+
+client.on('guildMemberAdd', عضو غير متزامن => {
+    console.log('انضم عضو جديد:', member.user.username);
+
+    يحاول {
+        const newInvites = await member.guild.invites.fetch();
+        ثابت oldInvites = invites.get(عضو.guild.id);
+
+        const دعوة = newInvites.find(inv => inv.uses > (oldInvites.get(inv.code) || 0));
+        دعوة ثابتة = دعوة؟ دعوة.inviter : فارغة؛
+
+        يدعو.set(عضو.guild.id، خريطة جديدة(newInvites.map(inv => [inv.code، inv.uses])));
+
+        القناة الثابتة = عضو.نقابة.قنوات.ذاكرة التخزين المؤقت.احصل على (معرف قناة الترحيب)؛
+        إذا لم يكن هناك قناة
+            console.log('لم يتم العثور على قناة الترحيب');
+            يعود؛
+        }
+
+        ثابت الدور = عضو.أدوار النقابة.ذاكرة التخزين المؤقت.احصل على (معرف الدور التلقائي)؛
+        إذا (الدور) {
+            انتظر member.roles.add(الدور)؛
+            console.log(`تم تعيين الدور ${role.name} إلى ${member.user.username}`);
+        } آخر {
+            console.log('لم يتم العثور على الدور');
+        }
+
+        const InviterMention = المدعو ? `<@${inviter.id}>` : 'غير معروف';
+
+const WelcomeEmbed = new EmbedBuilder()
+    .setColor('#000000')
+    .setTitle('ظ…ط±طط¨ظ‹ط§ ط¨ظƒ ظپظٹ ط§ظ‹ط³ظٹط±ظپط±!')
+    .setDescription(`ظ…ط±طط¨ظ‹ط§ ${عضو}, ظ…ط±طط¨ظ‹ط§ ط¨ظٹ ظپظٹ ط§ظ„ط³ظٹط±ظپط± ط§ط³طھظ…طھط¹ ط¨ط¥ ظ‚ط§ظ…طھظƒ.`)
+    .إضافة الحقول(
+        { الاسم: 'ط§ط³ظ… ط§ظ„ظ…ط³طھط®ط¯ظ…', القيمة: member.user.username, المضمنة: true },
+        { الاسم: 'طھظ…طھ ط§ظ„ط¯ط¹ظˆط© ط¨ظˆط§ط³ط·ط©'، القيمة: دعوة الدعوة، مضمّنة: صحيح },
+        { الاسم: 'ط£ظ†طھ ط¹ط¶ظˆ ط±ظ‚ظ…', القيمة: member.guild.memberCount.toString(), المضمنة: true },
+        { الاسم: 'ظ‚ظˆط§ظ†ظٹظ† ط§ظ„ط³ظٹط±ظپط±'، القيمة: '<#1279126643499204651>'، مضمنة: صحيح }،
+        { الاسم: 'ظ‚ظ†ط§ط© ط§ظ„ط¯ط¹ظ…', القيمة: '<#1279127618914095144>', المضمنة: صحيح }
+    )
+    .setImage('https://images-ext-1.discordapp.net/external/Fs2VPJBW7ucBJGH0pbhoy37NHU4e8SN1D86ZOHWu3HA/https/i.imgur.com/D8xKOSf.mp4') // طط· ط±ط§ط¨ط· ظ…ط ¨ط§ط´ط± ظ‹ظ‹طμظˆط±ط© ظ‡ظ†ط§
+    .setTimestamp();
+
+القناة.إرسال({ تضمينات: [ترحيب بالتضمين] });
+    } catch (خطأ) {
+        console.error('خطأ في جلب الدعوات أو تعيين الدور:', error);
+    }
+});
+
+
+العميل.on('إنشاء رسالة'، الرسالة => {
+    إذا (يبدأ محتوى الرسالة بـ ('-say')) {
+        إذا (message.author.bot) العودة؛
+
+        عضو ثابت = message.guild.members.cache.get(message.author.id);
+        إذا لم يكن (!member || (!member.permissions.has('ADMINISTRATOR') && !member.permissions.has('MANAGE_GUILD'))) {
+            رد الرسالة.رد('ظ„ظٹط³ ظ„ط¯ظٹظƒ ط§ظ„طμظ„ط§طظٹط© ظط§ط³طھط®ط¯ط§ظ… ظ‡ط°ط§ ط§ظ„ط £ظ… ط ±.');
+        }
+
+        ثابت النص = message.content.slice(5).trim();
+
+        إذا لم يكن هناك نص
+            إرجاع الرسالة. الرد (' ط§ظƒطھط¨ ط§ظ„ظƒظ„ط§ظ… ط¨ط¹ط¯ ط§ظ„ط£ظ…ط± ');
+        }
+
+        const embed = new EmbedBuilder()
+            .setDescription(النص)
+            .setColor('#000000');
+
+        الرسالة.القناة.إرسال({ تضمينات: [تضمين] });
+    }
+});
+
+العميل.on('إنشاء رسالة'، غير متزامن (رسالة) => {
+    إذا (message.author.bot) العودة؛
+    ثابت urlRegex = /(https?:\/\/[^\s]+)/g؛
+    إذا (urlRegex.test(محتوى الرسالة)) {
+        // طھطظ‚ظ‚ ط¥ط°ط§ ظƒط§ظ† ط§ظظ„ظ…ط±ط³ظ„ ظ„ط¯ظٹظ‡ ط¯ظ„ط§طظٹط© ADMINISTRATOR
+        إذا لم يكن (message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            // طط°ظپ ط§ظ‹ط±ط³ط§ظ‹ط©
+            انتظر الرسالة.حذف();
+            انتظار message.channel.send(`**__${message.author}, ظٹظ…ظ†ط¹ ظ†ط´ط± ط§ظ„ط±ظˆط§ط¨ط· ظ‡ظ†ط§__** ںڑ«`)؛
+        }
+    }
+});
+
+العميل.تسجيل الدخول('');
